@@ -1,0 +1,24 @@
+<form method="POST" enctype="multipart/form-data">
+                                            <div class='file file--upload'>
+                                                <label for='input-file'>
+                                                    <i class="material-icons"></i>
+                                                </label>
+                                                <input name='file_name' accept=".csv"  type='file' />
+                                            </div>
+  <div>
+                                                <button type="submit" name="upload_file"
+                                                    class="btn btn-primary">Upload</button>
+                                            </div>
+                                        </form>
+
+<?php
+if (isset($_POST['upload_file'])) {
+    $location_id = $_POST['location_id'];
+    $file_name = $_FILES['file_name'];
+    print_r($file_name);
+    //$status  = csv($location_id, $reg_date, $reg_count);
+    //if ($status['status'] != 200) {
+    //  $error = $status['msg'];
+    //}
+}
+?>
