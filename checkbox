@@ -1,0 +1,193 @@
+           <form id="deleteForm" method="POST" action="/internet/admin/view/booking/deleteMultiple">
+
+            <table class="table table-bordered" id="dataTable" style="display: none;">
+                <thead>
+                    <tr>
+
+                        <th>
+                            <?php 
+                                if($permission_delete == 1){
+                            ?>
+                             <input type="checkbox" id="select_all" />
+                            <?php 
+                                }
+                            ?>
+                        </th>
+
+                        <th scope="col">Exam Category</th>
+                        <th scope="col">Exam</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Room</th>
+                        <th scope="col">Booking Date</th>
+                        <th scope="col">Booking Time</th>
+                        <th scope = "col">Added By</th>
+                        <th scope="col">Action</th>
+                        
+                        <!-- <th scope="col">Is Active</th> -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($all_bookings as $booking){ ?>
+                    <tr>
+
+                        <td>
+                            <?php 
+                                if($permission_delete == 1 && $_SESSION['user_id'] == $booking->added_by){
+                            ?>
+                              <input type="checkbox" class="sub_check" data-id="<?php echo $booking->id; ?>" name="sub_check" />
+                                   
+                            <?php 
+                                }
+                            ?>
+                        </td>
+
+                        <td scope="row">
+                            <?php foreach($all_exam_categories as $category) {
+                                 if($category->id == $booking->exam_category) 
+                                 { echo $category->name; }  }?>
+
+
+                        </td>
+                      
+
+                        <td scope="row"><?php echo $booking->booking_date;?></td>
+                        <td scope="row"><?php echo $booking->booking_time;?></td>
+
+                        
+                        <td scope="row">
+                            <?php 
+                                foreach($all_users as $users) {
+                                    if($users->id == $booking->added_by){ 
+                                        echo $users->first_name . " " . $users->last_name; 
+                                    }  
+                                }
+                            ?>
+                        </td>
+
+                        <?php   
+                                $start = new DateTime($booking->booking_time);
+                                $end = new DateTime($booking->booking_end_time);
+                                
+                                // Calculate the difference
+                                $interval = $start->diff($end);
+                                
+                                // Extract hours and minutes
+                                $hours = $interval->h;
+                                $minutes = $interval->i;
+
+                                if($minutes >= 0 && $minutes < 10){
+                                    $minutes = "0{$minutes}";
+                                }
+                                    if($_SESSION['role_id'] != 2){
+                                ?>
+                        <td class="action">
+                            <?php 
+                                if($permission_edit == 1){
+                            ?>
+                            <a href="#" data-target="#editBooking" class="edit-link" data-toggle="modal"
+                                data-id="<?php echo $booking->id;  ?>"
+                                data-category="<?php echo $booking->exam_category;  ?>"
+                                data-exam="<?php echo $booking->exams;  ?>"
+                                data-location="<?php echo $booking->location;  ?>"
+                                data-room="<?php echo $booking->room;  ?>"
+                                data-date="<?php echo $booking->booking_date;  ?>"
+                                data-addedby = "<?php echo $booking->added_by; ?>" 
+                                data-userid = "<?php echo $_SESSION['user_id']; ?>"
+                                data-ehours = "<?= $hours ?? 0 ?>"
+                                data-eminutes = "<?= $minutes ?? "00" ?>"
+                                data-time="<?php echo $booking->booking_time;  ?>"
+                                data-hreq = "<?php echo $booking->have_requirement?>" data-req = "<?php echo $booking->requirement?>"><i class="fa fa-pencil"
+                                    aria-hidden="true" data-toggle="tooltip" data-placement="top" title=""
+                                    data-original-title="Edit"></i></a>
+                            <?php
+                                }
+                            ?>
+
+                            <?php 
+                                if($permission_delete == 1 || $_SESSION['user_id'] == $booking->added_by){
+                            ?>
+                            <a href="#" class="delete-link" data-id="<?php echo $booking->id;  ?>"
+                                data-target="#deleteBooking" data-toggle="modal"><i class="fa fa-trash"
+                                    aria-hidden="true" data-toggle="tooltip" data-placement="top" title=""
+                                    data-original-title="Delete"></i></a>
+
+                            <?php 
+                                }
+                            ?>
+
+                        </td>
+
+                        <?php 
+                                    }
+                                ?>
+
+                    </tr>
+                    <?php } ?>
+
+
+                </tbody>
+            </table>
+
+        </form>
+             <script>
+    // Select/Deselect all checkboxes
+    document.getElementById('select_all').addEventListener('click', function() {
+        var checkboxes = document.querySelectorAll('.sub_check');
+        for (var checkbox of checkboxes) {
+            checkbox.checked = this.checked;
+        }
+    });
+
+    // Handle delete button click
+    document.getElementById('deleteSelected').addEventListener('click', function() {
+        var ids = [];
+        var checkboxes = document.querySelectorAll('.sub_check:checked');
+        for (var checkbox of checkboxes) {
+            ids.push(checkbox.getAttribute('data-id'));
+        }
+        if (ids.length > 0) {
+            if (confirm('Are you sure you want to delete the selected bookings?')) {
+                var form = document.getElementById('deleteForm');
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids';
+                input.value = JSON.stringify(ids);
+                form.appendChild(input);
+                form.submit();
+            }
+        } else {
+            alert('Please select at least one booking to delete.');
+        }
+    });
+</script>
+
+             // controller codgineter
+
+             public function deleteMultiple() {
+		$ids = json_decode($this->input->post('ids'), true);
+		if (!empty($ids)) {
+			$this->load->model('Admin_model');
+			$deleted = $this->Admin_model->deleteBookings($ids);
+			if ($deleted) {
+				$this->session->set_flashdata('message', 'Selected bookings have been deleted.');
+			} else {
+				$this->session->set_flashdata('error', 'Failed to delete the selected bookings.');
+			}
+		} else {
+			$this->session->set_flashdata('error', 'No bookings selected for deletion.');
+		}
+		redirect('/admin/view/booking');
+	}
+
+             //model 
+              public function deleteBookings($ids) {
+    $this->db->where_in('id', $ids);
+    return $this->db->delete('bookings');
+}
+
+
+             //route
+
+             $route['admin/view/booking/deleteMultiple'] = 'admin/View_booking/deleteMultiple';
+
+     
