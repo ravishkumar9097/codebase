@@ -1,0 +1,5 @@
+git init
+git add .
+git commit -m "testing"
+git remote add origin https://github.com/ravishkumar9097/internet.git
+git push origin master
